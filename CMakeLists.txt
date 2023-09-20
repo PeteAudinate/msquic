@@ -98,6 +98,7 @@ option(QUIC_OPTIMIZE_LOCAL "Optimize code for local machine architecture" OFF)
 option(QUIC_CI "CI Specific build" OFF)
 option(QUIC_SKIP_CI_CHECKS "Disable CI specific build checks" OFF)
 option(QUIC_TELEMETRY_ASSERTS "Enable telemetry asserts in release builds" OFF)
+option(QUIC_USE_SYSTEM_LIBSSL "Use system libssl if openssl TLS" OFF)
 option(QUIC_USE_SYSTEM_LIBCRYPTO "Use system libcrypto if openssl TLS" OFF)
 option(QUIC_HIGH_RES_TIMERS "Configure the system to use high resolution timers" OFF)
 option(QUIC_USE_XDP "Uses XDP instead of socket APIs" OFF)
@@ -660,22 +661,27 @@ else() #!WIN32
     set(QUIC_CXX_FLAGS ${QUIC_COMMON_FLAGS})
 endif()
 
-if(QUIC_TLS STREQUAL "openssl" OR  QUIC_TLS STREQUAL "openssl3")
-    add_library(OpenSSL INTERFACE)
+if(QUIC_TLS STREQUAL "openssl" OR QUIC_TLS STREQUAL "openssl3")
+    if (QUIC_USE_SYSTEM_LIBSSL)
+        find_package(OpenSSL REQUIRED)
+        add_library(OpenSSL ALIAS OpenSSL::SSL)
+    else()
+        add_library(OpenSSL INTERFACE)
 
-    include(FetchContent)
+        include(FetchContent)
 
-    FetchContent_Declare(
-        OpenSSLQuic
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/submodules
-        CMAKE_ARGS "-DQUIC_USE_SYSTEM_LIBCRYPTO=${QUIC_USE_SYSTEM_LIBCRYPTO}"
-    )
-    FetchContent_MakeAvailable(OpenSSLQuic)
+        FetchContent_Declare(
+            OpenSSLQuic
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/submodules
+            CMAKE_ARGS "-DQUIC_USE_SYSTEM_LIBCRYPTO=${QUIC_USE_SYSTEM_LIBCRYPTO}"
+        )
+        FetchContent_MakeAvailable(OpenSSLQuic)
 
-    target_link_libraries(OpenSSL
-        INTERFACE
-        OpenSSLQuic::OpenSSLQuic
-    )
+        target_link_libraries(OpenSSL
+            INTERFACE
+            OpenSSLQuic::OpenSSLQuic
+        )
+    endif()
 endif()
 
 if (QUIC_USE_SYSTEM_LIBCRYPTO)
