@@ -269,9 +269,11 @@ set(PUBLIC_HEADERS
     ../inc/quic_sal_stub.h)
 
 if(BUILD_SHARED_LIBS)
-  install(TARGETS msquic EXPORT msquic DESTINATION lib)
+    install(TARGETS msquic EXPORT msquic DESTINATION lib)
+elseif(QUIC_INSTALL_INDIVIDUAL_LIBS)
+    install(TARGETS msquic_static core platform DESTINATION lib)
 else()
-  install(FILES ${QUIC_STATIC_LIBRARY} DESTINATION lib)
+    install(FILES ${QUIC_STATIC_LIBRARY} DESTINATION lib)
 endif()
 install(FILES ${PUBLIC_HEADERS} DESTINATION include)
 
